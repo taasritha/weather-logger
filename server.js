@@ -6,7 +6,7 @@ import cors from "cors";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5500;
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 
 app.use(cors());
