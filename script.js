@@ -1,54 +1,52 @@
-require("dotenv").config();
-
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
-
 let weatherData = {
-    city1: [],
-    city2: [],
-    city3: []
-};
+            city1: [],
+            city2: [],
+            city3: []
+        };
 
 async function getWeatherData(city) {
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${OPENWEATHER_API_KEY}`);
-    const data = await response.json();
-    // console.log(data)
-    return data;
+    try {
+        const response = await fetch(`http://localhost:3000/weather?city=${encodeURIComponent(city)}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || "Failed to fetch weather data");
+        }
+        return data;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
 }
 
 async function logWeatherData() {
-    const city1 = document.getElementById('city1').value;
-    const city2 = document.getElementById('city2').value;
-    const city3 = document.getElementById('city3').value;
+    const city1 = document.getElementById('city1').value.trim();
+    const city2 = document.getElementById('city2').value.trim();
+    const city3 = document.getElementById('city3').value.trim();
 
-    const weatherPromises = [
-        getWeatherData(city1),
-        getWeatherData(city2),
-        getWeatherData(city3)
-    ];
+    const weatherPromises = [getWeatherData(city1), getWeatherData(city2), getWeatherData(city3)];
+    const results = await Promise.all(weatherPromises);
 
-    const [data1, data2, data3] = await Promise.all(weatherPromises);
+    if (results.includes(null)) {
+        alert("Some city names might be incorrect. Please check and try again.");
+        return;
+    }
 
-    weatherData.city1.push(data1.main.temp);
-    weatherData.city1.push(data1.main.humidity);
+    const [data1, data2, data3] = results;
 
-    weatherData.city2.push(data2.main.temp);
-    weatherData.city2.push(data2.main.humidity);
-
-    weatherData.city3.push(data3.main.temp);
-    weatherData.city3.push(data3.main.humidity);
+    weatherData.city1.push(data1.main.temp, data1.main.humidity);
+    weatherData.city2.push(data2.main.temp, data2.main.humidity);
+    weatherData.city3.push(data3.main.temp, data3.main.humidity);
 
     displayWeather(data1, data2, data3);
-
     updateChartTemp(city1, city2, city3);
 }
 
 function displayWeather(data1, data2, data3) {
     const weatherResultDiv = document.getElementById('weatherResult');
-    
     const timestamp = new Date().toLocaleString();
-    
+
     weatherResultDiv.innerHTML = `
-        <br>
         <table border="1" style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
@@ -83,7 +81,6 @@ function displayWeather(data1, data2, data3) {
     `;
 }
 
-
 let weatherChart;
 
 function updateChartTemp(city1, city2, city3) {
@@ -94,33 +91,38 @@ function updateChartTemp(city1, city2, city3) {
     }
 
     weatherChart = new Chart(ctx, {
-        type: 'line',  
+        type: 'line',
         data: {
-            labels: [city1, city2, city3], 
+            labels: [city1, city2, city3],
             datasets: [
                 {
-                    label: 'Temperature (°C)',  
+                    label: 'Temperature (°C)',
                     data: [
-                        weatherData.city1[weatherData.city1.length - 2],  
-                        weatherData.city2[weatherData.city2.length - 2],  
-                        weatherData.city3[weatherData.city3.length - 2],  
+                        weatherData.city1.at(-2),
+                        weatherData.city2.at(-2),
+                        weatherData.city3.at(-2),
                     ],
-                    backgroundColor: ['#F29300', '#F29300', '#F29300'],  
-                    borderWidth: 5,
-                    pointRadius: 7
+                    borderColor: '#F29300',
+                    backgroundColor: '#21a0a0',
+                    borderWidth: 2,
+                    pointRadius: 5
                 },
                 {
-                    label: 'Humidity (%)',  
+                    label: 'Humidity (%)',
                     data: [
-                        weatherData.city1[weatherData.city1.length - 1],  
-                        weatherData.city2[weatherData.city2.length - 1],  
-                        weatherData.city3[weatherData.city3.length - 1],  
+                        weatherData.city1.at(-1),
+                        weatherData.city2.at(-1),
+                        weatherData.city3.at(-1),
                     ],
-                    backgroundColor: ['#21A0A0', '#21A0A0', '#21A0A0'],  
-                    borderWidth: 5,
-                    pointRadius: 7  
+                    borderColor: '#21A0A0',
+                    backgroundColor: '#21a0a0',
+                    borderWidth: 2,
+                    pointRadius: 5
                 }
             ]
+        },
+        options: {
+            responsive: true
         }
     });
 }
